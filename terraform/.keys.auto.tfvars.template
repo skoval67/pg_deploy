@@ -1,0 +1,4 @@
+YC_KEYS = { 
+  folder_id = ""
+  service_account_id = ""
+}
