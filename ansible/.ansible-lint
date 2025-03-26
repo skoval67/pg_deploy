@@ -1,0 +1,9 @@
+---
+skip_list:
+  - var-naming[no-role-prefix]
+  - risky-file-permissions
+  - no-changed-when
+  - var-naming[pattern]
+  - package-latest
+  - partial-become[task]
+  

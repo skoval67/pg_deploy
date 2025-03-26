@@ -1,0 +1,26 @@
+---
+# tasks file for CentOS osupgrade
+- name: Upgrade all packages on servers
+  ansible.builtin.dnf:
+    update_cache: true
+    name: "*"
+    state: latest
+
+- name: Check if a reboot is needed
+  ansible.builtin.command: needs-restarting -r
+  register: returned
+  failed_when: false
+
+- name: Reboot the server if kernel updated
+  ansible.builtin.reboot:
+    msg: "Reboot initiated by Ansible for kernel updates"
+    connect_timeout: 5
+    reboot_timeout: 900
+    pre_reboot_delay: 0
+    post_reboot_delay: 30
+    test_command: uptime
+  when: returned.rc == 1
+
+- name: Remove dependencies that are no longer required
+  ansible.builtin.dnf:
+    autoremove: true

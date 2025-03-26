@@ -1,0 +1,54 @@
+---
+# vars file for pg_inst
+postgres_version: 17.4
+install_dir: "/var/lib/postgresql/{{ postgres_version }}"
+
+requirements:
+  Debian:
+    - curl
+    - ca-certificates
+    - python3-psycopg2
+    - gcc
+    - build-essential
+    - zlib1g-dev
+    - libreadline6-dev
+    - libicu-dev
+    - pkg-config
+    - bison
+    - flex
+  CentOS:
+    - curl
+    - ca-certificates
+    - python3-psycopg2
+    - gcc
+    - bison
+    - flex
+    - perl-core
+    - make
+    - zlib-devel
+    - readline-devel
+    - libicu-devel
+
+connections:
+  - contype: host
+    users: all
+    source: 0.0.0.0/0
+    databases: all
+    method: scram-sha-256
+  - contype: host
+    users: student
+    source: "{{ CLIENT_HOST }}"
+    databases: all
+    method: scram-sha-256
+
+postgres_params:
+  - name: max_connections
+    value: 200
+  - name: shared_buffers
+    value: 1GB
+  - name: maintenance_work_mem
+    value: 256MB
+  - name: wal_buffers
+    value: 32MB
+  - name: effective_cache_size
+    value: 2560MB

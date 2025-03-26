@@ -1,0 +1,19 @@
+---
+- name: Check all systems are ready
+  hosts: all
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Wait for system to become reachable
+      ansible.builtin.wait_for_connection:
+
+- name: Update all nodes
+  hosts: all
+  roles:
+    - osupgrade
+
+- name: Setup postgres
+  hosts: "{{ DB_HOST | default('srvr1') }}"
+  roles:
+    - pg_inst
+    - db_users

@@ -1,0 +1,9 @@
+---
+# vars file for db_users
+db_users:
+  - username: student
+    password: student
+    state: present
+
+roles_map:
+  - { rolename: "pg_read_all_data", username: student }

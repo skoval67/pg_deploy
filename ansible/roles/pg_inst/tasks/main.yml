@@ -1,0 +1,112 @@
+# tasks
+- name: Install packages for Debian
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ requirements.Debian }}"
+  when: ansible_distribution == 'Debian'
+
+- name: Install packages for Centos
+  ansible.builtin.dnf:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ requirements.CentOS }}"
+  when: ansible_distribution == 'CentOS'
+
+- name: Download and unarchive sources
+  ansible.builtin.unarchive:
+    src: "https://ftp.postgresql.org/pub/source/v{{ postgres_version }}/postgresql-{{ postgres_version }}.tar.gz"
+    dest: /tmp
+    owner: root
+    remote_src: true
+
+- name: Creating postgres user
+  ansible.builtin.user:
+    name: postgres
+
+- name: Create data directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: postgres
+    mode: "0755"
+  loop:
+    - "{{ install_dir }}"
+    - /var/run/postgresql
+
+- name: Fix default unix socket directory
+  ansible.builtin.lineinfile:
+    path: "/tmp/postgresql-{{ postgres_version }}/src/include/pg_config_manual.h"
+    regexp: '(.*DEFAULT_PGSOCKET_DIR[ \t]+)"/tmp"'
+    line: '\1 "/var/run/postgresql"'
+    backrefs: true
+
+- name: Configure, build and install
+  ansible.builtin.shell: ./configure --prefix="{{ install_dir }}" && make && sudo make install
+  args:
+    chdir: "/tmp/postgresql-{{ postgres_version }}"
+
+- name: Init DB
+  become_user: postgres
+  ansible.builtin.command: "{{ install_dir }}/bin/initdb -D {{ install_dir }}/data"
+
+- name: Fix selinux context
+  when: ansible_distribution == 'CentOS'
+  block:
+    - name: Create SELinux context for new files
+      community.general.sefcontext:
+        target: "{{ install_dir }}/bin(/.*)?"
+        setype: bin_t
+        state: present
+
+    - name: Apply new SELinux file context to filesystem
+      ansible.builtin.command: restorecon -irv "{{ install_dir }}/bin/"
+
+- name: Uncomment unix_socket_directories parameter
+  ansible.builtin.lineinfile:
+    path: "{{ install_dir }}/data/postgresql.conf"
+    regexp: '#(unix_socket_directories.*)'
+    line: '\1'
+    backrefs: true
+
+- name: Configure PostgreSQL pg_hba.conf
+  community.postgresql.postgresql_pg_hba:
+    dest: "{{ install_dir }}/data/pg_hba.conf"
+    contype: "{{ item.contype }}"
+    users: "{{ item.users }}"
+    source: "{{ item.source }}"
+    databases: "{{ item.databases }}"
+    method: "{{ item.method }}"
+  loop: "{{ connections }}"
+
+- name: Configure PostgreSQL. Set listen_addresses.
+  ansible.builtin.lineinfile:
+    dest: "{{ install_dir }}/data/postgresql.conf"
+    regexp: "listen_addresses ="
+    line: "listen_addresses = '0.0.0.0'"
+    state: present
+
+- name: Create Unit file
+  ansible.builtin.template:
+    src: postgresql.service.j2
+    dest: /lib/systemd/system/postgresql.service
+    mode: "644"
+
+- name: Reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+    name: postgresql.service
+    state: started
+    enabled: true
+
+- name: Set parameters
+  become_user: postgres
+  community.postgresql.postgresql_set:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+  loop: "{{ postgres_params }}"
+  notify: Restart postgresql
+
+- name: Set password for the default PostgreSQL user
+  become_user: postgres
+  ansible.builtin.shell: '{{ install_dir }}/bin/psql -c "ALTER USER postgres WITH PASSWORD ''{{ postgres_password }}'';"'

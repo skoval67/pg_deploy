@@ -1,8 +1,9 @@
 resource "yandex_compute_instance" "srvr1" {
   name                      = "srvr1"
+  hostname                  = "srvr1"
   platform_id               = "standard-v3"
   allow_stopping_for_update = true
-  zone        = "ru-central1-a"
+  zone                      = "ru-central1-a"
 
   resources {
     core_fraction = 20
@@ -30,15 +31,16 @@ resource "yandex_compute_instance" "srvr1" {
   }
 
   metadata = {
-    ssh-keys = "debian:${file("~/.ssh/id_ed25519.pub")}"
+    user-data = "${templatefile("meta.tftpl", { ssh_pub_key = file("~/.ssh/id_rsa_test.pub") })}"
   }
 }
 
 resource "yandex_compute_instance" "srvr2" {
   name                      = "srvr2"
+  hostname                  = "srvr2"
   platform_id               = "standard-v3"
   allow_stopping_for_update = true
-  zone        = "ru-central1-b"
+  zone                      = "ru-central1-b"
 
   resources {
     core_fraction = 20
@@ -66,6 +68,6 @@ resource "yandex_compute_instance" "srvr2" {
   }
 
   metadata = {
-    ssh-keys = "debian:${file("~/.ssh/id_ed25519.pub")}"
+    user-data = "${templatefile("meta.tftpl", { ssh_pub_key = file("~/.ssh/id_rsa_test.pub") })}"
   }
 }

@@ -9,6 +9,6 @@ terraform {
 }
 
 provider "yandex" {
-  zone      = "ru-central1-a"
+  # zone      = "ru-central1-a"
   folder_id = var.YC_KEYS.folder_id
 }
