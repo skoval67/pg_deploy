@@ -1,10 +1,12 @@
+SHELL := /bin/bash
+
 include .env
 
 .PHONY: all
 
-all: run_playbook
+all: inv
 
-prepare: build_infra venv_init
+prepare: venv_init build_infra
 
 venv_init:
 	@cd ansible; \
@@ -17,9 +19,13 @@ build_infra:
 		export TF_VAR_MY_IP="$$(curl -s https://ident.me)/32";\
 		terraform apply -auto-approve
 
-run_playbook:
+inv:
 	@cd terraform;\
 		export inventory="$$(terraform output -json | jq -r .[].value | xargs | sed -e 's/ /,/g')";\
-	cd ../ansible;\
+		cd ..; $(MAKE) pg_deploy
+
+pg_deploy:
+	cd ansible;\
 		. .venv/bin/activate;\
-		ansible-playbook -b -e DB_HOST="158.160.94.74" -e CLIENT_HOST="158.160.108.169/32" -e postgres_password=${POSTGRESS_PASSWORD} -i $${inventory}, playbook.yml
+		targets=( $$(./check_la15 $${inventory}) );\
+		ansible-playbook -b -e DB_HOST="$${targets[0]}" -e CLIENT_HOST="$${targets[1]}/32" -e postgres_password=${POSTGRESS_PASSWORD} -i $${inventory}, playbook.yml

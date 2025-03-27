@@ -31,7 +31,7 @@ requirements:
 
 connections:
   - contype: host
-    users: all
+    users: /^(?!student)\w*
     source: 0.0.0.0/0
     databases: all
     method: scram-sha-256
