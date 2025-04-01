@@ -1,4 +1,3 @@
-grpcio
-ansible
+ansible == 9.1.0
 passlib
 fabric

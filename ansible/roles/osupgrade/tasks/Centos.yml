@@ -1,7 +1,15 @@
 ---
 # tasks file for CentOS osupgrade
 - name: Upgrade all packages on servers
+  when: ansible_distribution_major_version|int > 7
   ansible.builtin.dnf:
+    update_cache: true
+    name: "*"
+    state: latest
+
+- name: Upgrade all packages on servers
+  when: ansible_distribution_major_version|int == 7
+  ansible.legacy.yum:
     update_cache: true
     name: "*"
     state: latest
@@ -22,5 +30,11 @@
   when: returned.rc == 1
 
 - name: Remove dependencies that are no longer required
+  when: ansible_distribution_major_version|int > 7
   ansible.builtin.dnf:
+    autoremove: true
+
+- name: Remove dependencies that are no longer required
+  when: ansible_distribution_major_version|int == 7
+  ansible.legacy.yum:
     autoremove: true

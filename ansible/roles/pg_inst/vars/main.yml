@@ -1,6 +1,6 @@
 ---
 # vars file for pg_inst
-postgres_version: 17.4
+postgres_version: 16.0
 install_dir: "/var/lib/postgresql/{{ postgres_version }}"
 
 requirements:
@@ -28,10 +28,22 @@ requirements:
     - zlib-devel
     - readline-devel
     - libicu-devel
+  CentOS7:
+    - curl
+    - ca-certificates
+    - python-psycopg2
+    - gcc
+    - bison
+    - flex
+    - perl-core
+    - make
+    - zlib-devel
+    - readline-devel
+    - libicu-devel
 
 connections:
   - contype: host
-    users: /^(?!student)\w*
+    users: "{% if postgres_version is version('16.0', '>=') %}/^(?!student)\\w*{% else %}postgres{% endif %}"
     source: 0.0.0.0/0
     databases: all
     method: scram-sha-256

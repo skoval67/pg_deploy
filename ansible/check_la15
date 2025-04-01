@@ -3,12 +3,25 @@
 import sys
 from fabric import Connection
 
+HOST_USER = "admin"
+KEY_FILE = "/home/sergey/.ssh/id_rsa_test"
+
 def Usage():
   print("Usage: check_la15 'ip list'")
 
+def load(ip):
+  try:
+    conn = Connection(host=ip, user=HOST_USER, connect_kwargs={"key_filename": KEY_FILE})
+    loadavg = conn.run("cat /proc/loadavg", hide=True).stdout.split()
+    return loadavg[2]
+  except Exception as err:
+    print(f"{err}, {type(err)}")
+    return float('inf')
+
 def check_load(targets):
-  print(targets.replace(",", " "))
-  pass
+  servers = {server: load(server) for server in targets.split(",")}
+  sort_loads = sorted(servers, key=servers.get)
+  print(f"{sort_loads[0]} {sort_loads[-1]}")
 
 def main(args=[]):
   if not args :

@@ -25,7 +25,7 @@ inv:
 		cd ..; $(MAKE) pg_deploy
 
 pg_deploy:
-	cd ansible;\
+	@cd ansible;\
 		. .venv/bin/activate;\
 		targets=( $$(./check_la15 $${inventory}) );\
 		ansible-playbook -b -e DB_HOST="$${targets[0]}" -e CLIENT_HOST="$${targets[1]}/32" -e postgres_password=${POSTGRESS_PASSWORD} -i $${inventory}, playbook.yml

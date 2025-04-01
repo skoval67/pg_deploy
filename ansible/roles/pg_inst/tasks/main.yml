@@ -11,7 +11,14 @@
     name: "{{ item }}"
     state: present
   loop: "{{ requirements.CentOS }}"
-  when: ansible_distribution == 'CentOS'
+  when: (ansible_distribution == 'CentOS' or ansible_distribution == 'AlmaLinux') and ansible_distribution_major_version|int > 7
+
+- name: Install packages for Centos 7
+  ansible.legacy.yum:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ requirements.CentOS7 }}"
+  when: ansible_distribution == 'CentOS' and ansible_distribution_major_version|int == 7
 
 - name: Download and unarchive sources
   ansible.builtin.unarchive:
@@ -51,7 +58,7 @@
   ansible.builtin.command: "{{ install_dir }}/bin/initdb -D {{ install_dir }}/data"
 
 - name: Fix selinux context
-  when: ansible_distribution == 'CentOS'
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'AlmaLinux'
   block:
     - name: Create SELinux context for new files
       community.general.sefcontext:
@@ -110,3 +117,14 @@
 - name: Set password for the default PostgreSQL user
   become_user: postgres
   ansible.builtin.shell: '{{ install_dir }}/bin/psql -c "ALTER USER postgres WITH PASSWORD ''{{ postgres_password }}'';"'
+
+- name: Check ready to work
+  become_user: postgres
+  community.postgresql.postgresql_query:
+    db: postgres
+    query: SELECT version()
+  register: result
+
+- name: Print version
+  ansible.builtin.debug:
+    var: result.query_result[0].version
